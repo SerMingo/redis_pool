@@ -10,9 +10,9 @@
 
 %% api callbacks
 -export([
-  start_link/1,
-  q/1,
-  keys/1
+  start/1, start/2, start_link/1, start_link/2,
+  q/2, flushdb/1, set/3, get/2, sadd/3, lrange/4, 
+  smembers/2, incr/2, keys/2, mget/2
 ]).
 
 -define(NL, <<"\r\n">>).
@@ -28,18 +28,57 @@
 %%====================================================================
 %% api callbacks
 %%====================================================================
-start_link(Opts) ->
-  gen_server:start_link({local, ?MODULE}, ?MODULE, Opts, []).
+start(Opts) ->
+  gen_server:start(?MODULE, Opts, []).
+  
+start(ConnName, Opts) when is_atom(ConnName) ->
+  case gen_server:start({local, ConnName}, ?MODULE, Opts, []) of
+    {ok, _Pid} -> ok;
+    Error -> Error
+  end.
 
-q(Parts) ->
-  gen_server:call(?MODULE, {q, Parts}).
+start_link(Opts) ->
+  gen_server:start_link(?MODULE, Opts, []).
+
+start_link(ConnName, Opts) when is_atom(ConnName) ->
+  case gen_server:start_link({local, ConnName}, ?MODULE, Opts, []) of
+    {ok, _Pid} -> ok;
+    Error -> Error
+  end.
+
+q(Conn, Parts) ->
+  gen_server:call(Conn, {q, Parts}).
 
 %%
 %% Generic Sugar
 %%
-keys(Pat) ->
-  {ok, Data} = q([keys, Pat]),
+flushdb(Conn) ->
+  q(Conn, [flushdb]).
+  
+set(Conn, Key, Value) ->
+  q(Conn, [set, Key, Value]).
+  
+get(Conn, Key) ->
+  q(Conn, [get, Key]).
+  
+sadd(Conn, Key, Value) ->
+  q(Conn, [sadd, Key, Value]).
+
+lrange(Conn, Key, Start, End) ->
+  q(Conn, [lrange, Key, Start, End]).
+  
+smembers(Conn, Key) ->
+  q(Conn, [smembers, Key]).
+  
+incr(Conn, Key) ->
+  q(Conn, [incr, Key]).
+  
+keys(Conn, Pat) ->
+  {ok, Data} = q(Conn, [keys, Pat]),
   re:split(Data, " ").
+  
+mget(Conn, Keys) ->
+  q(Conn, [mget | Keys]).
 
 %%====================================================================
 %% gen_server callbacks
@@ -176,7 +215,7 @@ read_resp(Socket) ->
   end.
 
 read_body(_Socket, -1) ->
-  {ok, null};
+  {ok, undefined};
 read_body(_Socket, 0) ->
   {ok, <<>>};
 read_body(Socket, Size) ->

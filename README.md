@@ -27,26 +27,47 @@
 
 ## Raw examples
 
-    0> redis:connect([]).  % connect to default redis port on localhost
-    1> redis:q([set, "foo", "bar"]).
+    0> {ok, Redis} = redis:connect([]).  % connect to default redis port on localhost
+    {ok, <0.49.0>}
+    1> redis:q(Redis, [set, "foo", "bar"]).
     {ok,<<"OK">>}
-    2> redis:q([get, "foo"]).
+    2> redis:q(Redis, [get, "foo"]).
     {ok,<<"bar">>}
-    3> redis:q([sadd, "bar", "a"]).
+    3> redis:q(Redis, [sadd, "bar", "a"]).
     {ok,1}
-    4> redis:q([sadd, "bar", "b"]).
+    4> redis:q(Redis, [sadd, "bar", "b"]).
     {ok,1}
-    5> redis:q([sadd, "bar", "c"]).
+    5> redis:q(Redis, [sadd, "bar", "c"]).
     {ok,1}
-    6> redis:q([lrange, 0, -1]).
+    6> redis:q(Redis, [lrange, 0, -1]).
     {error,<<"ERR wrong number of arguments for 'lrange' command">>}
-    7> redis:q([lrange, "bar", 0, -1]).
+    7> redis:q(Redis, [lrange, "bar", 0, -1]).
     {error,<<"ERR Operation against a key holding the wrong kind of value">>}
-    8> redis:q([smembers, "bar"]).
+    8> redis:q(Redis, [smembers, "bar"]).
     [{ok,<<"c">>},{ok,<<"a">>},{ok,<<"b">>}]
-    9> redis:q([incr, "counter"]).
+    9> redis:q(Redis, [incr, "counter"]).
     {ok,1}
-    10>
+
+## API Functions
+
+  	0> {ok, Redis} = redis:connect([]).  % connect to default redis port on localhost
+    {ok, <0.49.0>}
+    1> redis:set(Redis, "foo", "bar").
+    {ok,<<"OK">>}
+    2> redis:get(Redis, "foo").
+    {ok,<<"bar">>}
+    3> redis:sadd(Redis, "bar", "a").
+    {ok,1}
+    4> redis:sadd(Redis, "bar", "b").
+    {ok,1}
+    5> redis:sadd(Redis, "bar", "c").
+    {ok,1}
+    7> redis:lrange(Redis, "bar", 0, -1).
+    {error,<<"ERR Operation against a key holding the wrong kind of value">>}
+    8> redis:smembers(Redis, "bar").
+    [{ok,<<"c">>},{ok,<<"a">>},{ok,<<"b">>}]
+    9> redis:incr(Redis, "counter").
+    {ok,1}
 
 ## Breakdance/Breakdown
 
@@ -81,10 +102,14 @@
         Sepcify the db to use.  Default is 0.
 
 
-    redis:q(Parts) -> {ok, binary()} | {ok, int()} | {error, binary()}
+    redis:q(Conn, Parts) -> {ok, binary()} | {ok, int()} | {error, binary()}
 
       Types
 
+        Conn = pid() | atom()
+        
+          Either the pid returned from connect/1 or the registered process name
+                
         Parts = [Part]
 
           The sections, in order, of the command to be executed
@@ -111,7 +136,7 @@
 
 The amazing [SORT](http://code.google.com/p/redis/wiki/SortCommand) command:
 
-    redis:q([sort, "foo", by, "bar:*"]).
+    redis:q(Conn, [sort, "foo", by, "bar:*"]).
 
     is converted to:
 

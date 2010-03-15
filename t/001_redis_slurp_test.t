@@ -3,59 +3,53 @@
 %%! -pa ebin/ -boot start_sasl
 
 main(_) ->
-
-  %% Devil Redis
-  redis:start_link([{port, 6660}]),
   etap:plan(unknown),
+  
+  %% Devil Redis
+  {ok, Pid} = redis:start_link([{port, 6660}]),
 
   %% Test flushdb first to ensure we have a clean db
   etap:is(
-    redis:q([flushdb]),
+    redis:q(Pid, [flushdb]),
     {ok, <<"OK">>},
     "+ status reply"
   ),
 
   etap:is(
-    redis:q([foobar]),
+    redis:q(Pid, [foobar]),
     {error, <<"ERR unknown command 'FOOBAR'">>},
     "- status reply"
   ),
 
   etap:is(
-    redis:q([set, "foo", "bar"]),
+    redis:q(Pid, [set, "foo", "bar"]),
     {ok, <<"OK">>},
     "test status reply"
   ),
 
   etap:is(
-    redis:q([get, "foo"]),
+    redis:q(Pid, [get, "foo"]),
     {ok, <<"bar">>},
     "test bulk reply"
   ),
 
   etap:is(
-    redis:q([get, "notakey"]),
-    {ok, null},
+    redis:q(Pid, [get, "notakey"]),
+    {ok, undefined},
     "test bulk reply with -1 length"
   ),
 
   etap:is(
-    redis:q([keys, "notamatch"]),
+    redis:q(Pid, [keys, "notamatch"]),
     {ok, <<>>},
     "test bulk reply with 0 length"
   ),
 
-  redis:q([set, "abc", "123"]),
+  redis:q(Pid, [set, "abc", "123"]),
   etap:is(
-    redis:q([mget, "foo", "abc"]),
+    redis:q(Pid, [mget, "foo", "abc"]),
     [{ok, <<"bar">>}, {ok, <<"123">>}],
     "multi bulk reply"
-  ),
-
-  etap:is(
-    redis:keys("*"),
-    [<<"foo">>, <<"abc">>],
-    "keys sugar"
   ),
 
   ok.
