@@ -25,7 +25,7 @@ q(Name, Parts) ->
 
 q(Pid, Parts, Retries) ->
     case gen_server:call(Pid, {q, Parts}) of
-        {error, closed} ->
+        {error, _} ->
             case Retries > 0 of
                 true ->
                     io:format("redis reconnecting...~n"),
@@ -34,6 +34,7 @@ q(Pid, Parts, Retries) ->
                 false ->
                     {error, closed}
             end;
+
         Result ->
             Result
     end.
@@ -75,6 +76,7 @@ handle_call({reconnect, NewOpts}, _From, State) ->
     State1 = parse_options(NewOpts, #state{}),
     case connect(State1#state.ip, State1#state.port, State#state.pass) of
         {ok, Socket} ->
+            disconnect(State#state.socket),
             {reply, ok, State1#state{socket=Socket}};
         Error ->
             {reply, Error, State}
@@ -83,6 +85,7 @@ handle_call({reconnect, NewOpts}, _From, State) ->
 handle_call(reconnect, _From, State) ->
     case connect(State#state.ip, State#state.port, State#state.pass) of
         {ok, Socket} ->
+            disconnect(State#state.socket),
             {reply, ok, State#state{socket=Socket}};
         Error ->
             {reply, Error, State}
@@ -126,6 +129,14 @@ code_change(_OldVsn, State, _Extra) ->
 %%--------------------------------------------------------------------
 %% Internal functions
 %%--------------------------------------------------------------------
+disconnect(Socket) ->
+    case catch gen_tcp:close(Socket) of
+        {error, _Reason} ->
+            pass;
+        _ ->
+            pass
+    end.
+
 do_q(Parts, #state{socket=Socket}) ->
     send_recv(Socket, build_request(Parts)).
     
