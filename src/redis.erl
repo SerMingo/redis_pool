@@ -36,7 +36,7 @@ q(Pid, Parts, Retries, Timeout) ->
             %% genuine Redis error
             {error, Reason};
         
-        {error, _} ->
+        {error, R} ->
             case Retries > 0 of
                 true ->
                     gen_server:call(Pid, reconnect),
@@ -46,7 +46,7 @@ q(Pid, Parts, Retries, Timeout) ->
                     % Let's just give up and remove ourselves from the
                     % pool.
                     gen_server:cast(Pid, die),
-                    {error, closed}
+                    {error, R}
             end;
 
         {'EXIT', {timeout, C}} ->
