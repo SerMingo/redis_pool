@@ -1,4 +1,5 @@
 %% Copyright (c) 2010 Jacob Vorreuter <jacob.vorreuter@gmail.com>
+%% Copyright (c) 2010 Valentino Volonghi <valentino@adroll.com>
 %% 
 %% Permission is hereby granted, free of charge, to any person
 %% obtaining a copy of this software and associated documentation
